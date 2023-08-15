@@ -1,0 +1,36 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "create-block/kompakkt",
+	"version": "0.1.0",
+	"title": "Kompakkt",
+	"category": "widgets",
+	"description": "WordPress plugin to integrate the Kompakkt Viewer as a block",
+	"supports": {
+		"html": false
+	},
+	"textdomain": "kompakkt",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"script": [],
+	"attributes": {
+		"resource": {
+			"type": "string",
+			"default": ""
+		},
+		"endpoint": {
+			"type": "string",
+			"default": ""
+		},
+		"width": {
+			"type": "string",
+			"default": "100%"
+		},
+		"height": {
+			"type": "string",
+			"default": "650px"
+		}
+	}
+}

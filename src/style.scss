@@ -1,0 +1,14 @@
+.wp-block-create-block-kompakkt {
+	// background-color: #21759b;
+	// color: #fff;
+	padding: 2px;
+	max-width: 1024px !important;
+	width: min(100%, 1024px) !important;
+}
+
+app-kompakkt {
+	min-height: 650px;
+	resize: vertical;
+	overflow: hidden;
+	border-radius: 8px;
+}
