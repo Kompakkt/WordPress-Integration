@@ -31,6 +31,14 @@
     "height": {
       "type": "string",
       "default": "650px"
+    },
+    "instance": {
+      "type": "string",
+      "default": "https://kompakkt.de/viewer/index.html"
+    },
+    "selectedModel": {
+      "type": "string",
+      "default": ""
     }
   }
 }

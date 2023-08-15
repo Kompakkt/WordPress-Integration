@@ -1,0 +1,1 @@
+{"version":3,"file":"view.js","mappings":";;;;;AAAAA,OAAO,CAACC,GAAG,CAAC,iDAAiD,CAAC,C","sources":["webpack://kompakkt-wordpress/./src/view.js"],"sourcesContent":["console.log('Hello World! (from create-block-kompakkt block)');\n"],"names":["console","log"],"sourceRoot":""}
