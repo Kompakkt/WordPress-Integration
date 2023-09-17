@@ -43,6 +43,7 @@ function edit({
   setAttributes
 }) {
   const [models, setModels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
+  const [src, setSrc] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(new URL(instance));
   (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_3___default()({
       path: '/kompakkt/v1/models'
@@ -65,6 +66,14 @@ function edit({
       });
     });
   }, []);
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    const src = new URL(instance);
+    src.searchParams.set('resource', resource);
+    src.searchParams.set('endpoint', endpoint);
+    src.searchParams.set('standalone', 'true');
+    src.searchParams.set('mode', 'upload');
+    setSrc(src);
+  }, [instance, resource, endpoint]);
 
   // When selectedModel updates, get the first file
   (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
@@ -80,6 +89,15 @@ function edit({
       });
     }
   }, [selectedModel]);
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    window.addEventListener('message', event => {
+      if (event.origin === src.origin) {
+        const data = event.data;
+        // TODO: Handle settings and annotations sent from the viewer
+        console.log('Received message from kompakkt', data);
+      }
+    });
+  }, []);
 
   // Key to reload app-kompakkt when the properties change
   const key = `${instance}-${resource}-${endpoint}`;
@@ -95,14 +113,15 @@ function edit({
     onChange: value => setAttributes({
       selectedModel: value
     })
-  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("app-kompakkt", {
+  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("iframe", {
     key: key,
-    instance: instance,
-    resource: resource,
-    endpoint: endpoint,
+    src: src.toString(),
+    allowFullScreen: true,
     style: {
       width,
-      height
+      height,
+      border: 'none',
+      borderRadius: '8px'
     }
   }));
 }

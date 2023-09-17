@@ -7,6 +7,7 @@ import './editor.scss';
 
 export function edit({attributes: {instance, resource, endpoint, width, height, selectedModel}, setAttributes}) {
 	const [models, setModels] = useState([]);
+	const [src, setSrc] = useState(new URL(instance));
 
 	useEffect(() => {
 		apiFetch({path: '/kompakkt/v1/models'}).then(models => {
@@ -24,6 +25,15 @@ export function edit({attributes: {instance, resource, endpoint, width, height, 
 		});
 	}, []);
 
+	useEffect(() => {
+		const src = new URL(instance);
+		src.searchParams.set('resource', resource);
+		src.searchParams.set('endpoint', endpoint);
+		src.searchParams.set('standalone', 'true');
+		src.searchParams.set('mode', 'upload');
+		setSrc(src);
+	}, [instance, resource, endpoint]);
+
 	// When selectedModel updates, get the first file
 	useEffect(() => {
 		const model = models.find(model => model.id === selectedModel);
@@ -36,6 +46,16 @@ export function edit({attributes: {instance, resource, endpoint, width, height, 
 		}
 	}, [selectedModel]);
 
+	useEffect(() => {
+		window.addEventListener('message', (event) => {
+			if (event.origin === src.origin) {
+				const data = event.data;
+				// TODO: Handle settings and annotations sent from the viewer
+				console.log('Received message from kompakkt', data);
+			}
+		})
+	}, []);
+
 	// Key to reload app-kompakkt when the properties change
 	const key = `${instance}-${resource}-${endpoint}`;
 
@@ -47,8 +67,7 @@ export function edit({attributes: {instance, resource, endpoint, width, height, 
 			onChange={value => setAttributes({selectedModel: value})}
 		/>
 
-		<app-kompakkt key={key} instance={instance} resource={resource} endpoint={endpoint}
-					  style={{width, height}}></app-kompakkt>
+		<iframe key={key} src={src.toString()} allowFullScreen={true} style={{width, height, border: 'none', borderRadius: '8px'}}></iframe>
 	</div>);
 }
 
