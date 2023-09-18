@@ -25,8 +25,8 @@ $models     = $wpdb->get_results( "SELECT * FROM $table_name" );
 		}
 		echo '</ul></td>';
 		echo '<td>
-			<a href="?page=edit-model-settings&model=' . $model->id . '" class="button button-primary">Settings</a>
-			<a href="?page=manage-models&action=delete&model=' . $model->id . '" class="button button-secondary button-destructive" style="color: #DC3232; border-color: #DC3232">Delete</a>
+			<!--<a href="?page=kompakkt-edit-model-settings&model=' . $model->id . '" class="button button-primary">Settings</a>-->
+			<a href="?page=kompakkt-manage-models&action=delete&model=' . $model->id . '" class="button button-secondary button-destructive" style="color: #DC3232; border-color: #DC3232">Delete</a>
 		</td>';
 		echo '</tr>';
 		$index ++;

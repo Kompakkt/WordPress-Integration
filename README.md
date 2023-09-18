@@ -38,6 +38,6 @@ npm run wp-env stop
 
 - [x] Add a "Kompakkt"-block to the block editor
 - [x] Add admin menus to upload and manage models
-- [ ] Add option to adjust viewer settings from inside the plugin
+- [x] Add option to adjust viewer settings from inside the plugin
 - [ ] Add option to annotate models from inside the plugin
 - [ ] Add support for all Kompakkt model types

@@ -39,6 +39,10 @@
 		"selectedModel": {
 			"type": "string",
 			"default": ""
+		},
+		"src": {
+			"type": "string",
+			"default": ""
 		}
 	}
 }

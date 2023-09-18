@@ -21,9 +21,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
 /* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__);
-/* harmony import */ var _editor_scss__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./editor.scss */ "./src/editor.scss");
+/* harmony import */ var _wordpress_url__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/url */ "@wordpress/url");
+/* harmony import */ var _wordpress_url__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_url__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _editor_scss__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./editor.scss */ "./src/editor.scss");
+
 
 
 
@@ -38,73 +41,104 @@ function edit({
     endpoint,
     width,
     height,
-    selectedModel
+    selectedModel,
+    src
   },
   setAttributes
 }) {
   const [models, setModels] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)([]);
-  const [src, setSrc] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(new URL(instance));
+  const [iframeKey, setIframeKey] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(0);
+  const [showIframe, setShowIframe] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(false);
   (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_3___default()({
-      path: '/kompakkt/v1/models'
-    }).then(models => {
+      path: "/kompakkt/v1/models"
+    }).then(async models => {
       setModels(models);
-      if (selectedModel.length === 0) {
-        setAttributes({
-          selectedModel: models[0].id
-        });
-      }
+      setAttributes({
+        selectedModel: selectedModel.length === 0 ? models[0].id : selectedModel
+      });
     });
   }, []);
   (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_3___default()({
-      path: '/kompakkt/v1/instance-url'
+      path: "/kompakkt/v1/instance-url"
     }).then(instance => {
-      instance = instance || 'https://kompakkt.de/viewer/index.html';
+      instance = instance || "https://kompakkt.de/viewer/index.html";
       setAttributes({
         instance
       });
     });
   }, []);
-  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    const src = new URL(instance);
-    src.searchParams.set('resource', resource);
-    src.searchParams.set('endpoint', endpoint);
-    src.searchParams.set('standalone', 'true');
-    src.searchParams.set('mode', 'upload');
-    setSrc(src);
-  }, [instance, resource, endpoint]);
-
-  // When selectedModel updates, get the first file
-  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+  const handleLoadClick = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useCallback)(async () => {
     const model = models.find(model => model.id === selectedModel);
-    if (model?.files) {
-      const files = JSON.parse(model.files);
-      const firstValidFile = files[0];
-      const resource = firstValidFile.split('/').pop();
-      const endpoint = `${location.origin}/index.php?rest_route=/kompakkt/v1/model&id=${selectedModel}`;
-      setAttributes({
-        resource,
-        endpoint
-      });
-    }
-  }, [selectedModel]);
-  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    window.addEventListener('message', event => {
-      if (event.origin === src.origin) {
-        const data = event.data;
-        // TODO: Handle settings and annotations sent from the viewer
-        console.log('Received message from kompakkt', data);
-      }
+    if (!model?.files) return;
+    const files = JSON.parse(model.files);
+    const firstValidFile = files[0];
+    const resource = firstValidFile.split("/").pop();
+    const endpoint = `${location.origin}/index.php?rest_route=/kompakkt/v1/model&id=${selectedModel}`;
+    const src = new URL(instance);
+    src.searchParams.set("resource", resource);
+    src.searchParams.set("endpoint", endpoint);
+    src.searchParams.set("standalone", "true");
+    src.searchParams.set("mode", "open");
+    const response = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_3___default()({
+      path: (0,_wordpress_url__WEBPACK_IMPORTED_MODULE_4__.addQueryArgs)("/kompakkt/v1/model-settings", {
+        id: model.id
+      })
     });
-  }, []);
-
-  // Key to reload app-kompakkt when the properties change
-  const key = `${instance}-${resource}-${endpoint}`;
+    const hasSettings = response?.status !== "error";
+    if (hasSettings) {
+      src.searchParams.set("settings", "settings.json");
+    }
+    setAttributes({
+      src: src.toString(),
+      resource,
+      endpoint
+    });
+    setIframeKey(prevKey => prevKey + 1);
+    setShowIframe(true);
+  }, [instance, models, selectedModel, iframeKey]);
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    const handleMessage = event => {
+      if (event.origin !== new URL(instance).origin) return;
+      // TODO: Handle annotations sent from the viewer
+      const message = event.data;
+      console.log("Received message from kompakkt", message);
+      if (message.type === "settings") {
+        _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_3___default()({
+          path: (0,_wordpress_url__WEBPACK_IMPORTED_MODULE_4__.addQueryArgs)("/kompakkt/v1/model-settings", {
+            id: selectedModel
+          }),
+          method: "POST",
+          data: JSON.stringify(message.data)
+        }).then(response => {
+          console.log(response);
+          return handleLoadClick();
+        }).catch(error => console.log(error));
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, [instance, selectedModel, handleLoadClick]);
   return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
     ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.useBlockProps)()
-  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.SelectControl, {
-    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Select a Model', 'kompakkt'),
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+    style: {
+      display: "flex",
+      justifyContent: "center",
+      gap: "8px",
+      alignItems: "center",
+      width: "610px",
+      margin: "0 auto"
+    }
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+    style: {
+      flexGrow: 1
+    }
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_5__.SelectControl, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)("Select a Model", "kompakkt"),
     options: models.map(model => ({
       label: model.title,
       value: model.id
@@ -113,36 +147,38 @@ function edit({
     onChange: value => setAttributes({
       selectedModel: value
     })
-  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("iframe", {
-    key: key,
-    src: src.toString(),
+  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_5__.Button, {
+    onClick: handleLoadClick,
+    variant: "primary"
+  }, "Load")), src.length > 0 && showIframe && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("iframe", {
+    key: iframeKey,
+    src: src,
     allowFullScreen: true,
     style: {
       width,
       height,
-      border: 'none',
-      borderRadius: '8px'
+      border: "none",
+      borderRadius: "8px"
     }
   }));
 }
 function save({
   attributes: {
-    instance,
-    resource,
-    endpoint,
+    src,
     width,
     height
   }
 }) {
   return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
     ..._wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.useBlockProps.save()
-  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("app-kompakkt", {
-    instance: instance,
-    resource: resource,
-    endpoint: endpoint,
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("iframe", {
+    src: src,
+    allowFullScreen: true,
     style: {
       width,
-      height
+      height,
+      border: "none",
+      borderRadius: "8px"
     }
   }));
 }
@@ -278,13 +314,23 @@ module.exports = window["wp"]["i18n"];
 
 /***/ }),
 
+/***/ "@wordpress/url":
+/*!*****************************!*\
+  !*** external ["wp","url"] ***!
+  \*****************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["url"];
+
+/***/ }),
+
 /***/ "./src/block.json":
 /*!************************!*\
   !*** ./src/block.json ***!
   \************************/
 /***/ ((module) => {
 
-module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"create-block/kompakkt","version":"0.1.0","title":"Kompakkt","category":"widgets","description":"WordPress plugin to integrate the Kompakkt Viewer as a block","supports":{"html":false},"textdomain":"kompakkt","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js","script":[],"attributes":{"resource":{"type":"string","default":""},"endpoint":{"type":"string","default":""},"width":{"type":"string","default":"100%"},"height":{"type":"string","default":"650px"},"instance":{"type":"string","default":"https://kompakkt.de/viewer/index.html"},"selectedModel":{"type":"string","default":""}}}');
+module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"create-block/kompakkt","version":"0.1.0","title":"Kompakkt","category":"widgets","description":"WordPress plugin to integrate the Kompakkt Viewer as a block","supports":{"html":false},"textdomain":"kompakkt","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js","script":[],"attributes":{"resource":{"type":"string","default":""},"endpoint":{"type":"string","default":""},"width":{"type":"string","default":"100%"},"height":{"type":"string","default":"650px"},"instance":{"type":"string","default":"https://kompakkt.de/viewer/index.html"},"selectedModel":{"type":"string","default":""},"src":{"type":"string","default":""}}}');
 
 /***/ })
 
